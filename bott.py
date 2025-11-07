@@ -3,22 +3,21 @@ keep_alive()
 
 import asyncio
 import platform
-
-# ✅ تشغيل الـ event loop بس لو على Windows
-if platform.system() == "Windows":
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application, CommandHandler, CallbackQueryHandler,
     MessageHandler, ContextTypes, filters
 )
 
-# ✨ التوكن
+# ✅ إصلاح مشكلة الـ event loop في Windows
+if platform.system() == "Windows":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+# 🔹 توكن البوت
 TOKEN = "8587194106:AAHXquYldB0-oRc_nqsqDy0CuocrHSAeQqQ"
 
-# 🧑‍💻 معرف المطور
-DEVELOPER_ID = 1379876091  # ← غيّر الرقم ده بـ Telegram ID بتاعك
+# 🔹 معرف المطور
+DEVELOPER_ID = 1379876091  # غيّر الرقم ده لو انت المطور
 
 # 🎓 رسالة البداية
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -42,12 +41,30 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="Markdown"
     )
 
+# 🎯 القائمة الرئيسية (عشان نقدر نرجع ليها بسهولة)
+async def send_main_menu(update_or_query, context):
+    keyboard = [
+        [InlineKeyboardButton("🧑‍💻 سنة أولى", callback_data="year1")],
+        [InlineKeyboardButton("💬 تواصل مع المطور", callback_data="contact")],
+        [InlineKeyboardButton("💡 إرسال اقتراح", callback_data="suggestion")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    text = "🎓 القائمة الرئيسية — اختار اللي يناسبك 👇"
+
+    if hasattr(update_or_query, "callback_query"):
+        await update_or_query.callback_query.edit_message_text(
+            text=text, reply_markup=reply_markup
+        )
+    else:
+        await update_or_query.message.reply_text(
+            text=text, reply_markup=reply_markup
+        )
+
 # ⚙️ التعامل مع القوائم
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    # --- القائمة الرئيسية ---
     if query.data == "year1":
         keyboard = [
             [InlineKeyboardButton("📘 الترم الأول", callback_data="term1_year1")],
@@ -73,7 +90,6 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
 
-    # --- التواصل مع المطور ---
     elif query.data == "contact":
         keyboard = [
             [InlineKeyboardButton("📞 واتساب", url="https://wa.me/201126874664")],
@@ -85,20 +101,13 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
 
-    # --- إرسال اقتراح ---
     elif query.data == "suggestion":
         await query.edit_message_text("💡 اكتب اقتراحك أو التعديل اللي في بالك، وأنا هوصله للمطور 👇")
         context.user_data["awaiting_suggestion"] = True
 
-    # --- رجوع للقائمة الرئيسية ---
     elif query.data == "main_menu":
-        await context.bot.send_message(
-            chat_id=query.message.chat_id,
-            text="🎓 رجعناك للقائمة الرئيسية:"
-        )
-        await start(update, context)
+        await send_main_menu(update, context)
 
-    # --- المواد ---
     elif query.data in ["bus", "calc", "cp", "cs", "is", "phy"]:
         materials = {
             "bus": ("💼 Business", "https://drive.google.com/drive/folders/1ItwOAslWfqnww4HbvEYCPYdtUmQQAeIO", None),
@@ -115,7 +124,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         title, drive, video = materials[query.data]
         await send_material(query, title, drive, video)
 
-# 📦 دالة إرسال المادة
+# 📦 إرسال المواد
 async def send_material(query, title, drive_link, video_link):
     keyboard = []
     if drive_link:
@@ -128,28 +137,23 @@ async def send_material(query, title, drive_link, video_link):
         text=f"{title}\n\nاختار اللي عايز تشوفه 👇",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
-
     await query.message.reply_text("💬 متنساش تدعيلنا دعوة حلوة ❤️")
 
-# 📨 استقبال الاقتراحات من المستخدمين
+# 📨 استقبال الاقتراحات
 async def handle_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if context.user_data.get("awaiting_suggestion"):
         suggestion = update.message.text
         user = update.effective_user
-        await update.message.reply_text("✅ تم إرسال اقتراحك بنجاح! شكراً لمشاركتك ❤️")
-
-        # إرسال الاقتراح للمطور
+        await update.message.reply_text("✅ تم إرسال اقتراحك بنجاح! شكراً ❤️")
         await context.bot.send_message(
             chat_id=DEVELOPER_ID,
             text=f"📩 اقتراح جديد من {user.first_name} (@{user.username})\n🆔 ID: {user.id}\n\n💡 {suggestion}"
         )
-
         context.user_data["awaiting_suggestion"] = False
 
 # 🚀 تشغيل البوت
 def main():
     app = Application.builder().token(TOKEN).build()
-
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(handle_callback))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_messages))
