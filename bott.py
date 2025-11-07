@@ -2,7 +2,11 @@ from keep_alive import keep_alive
 keep_alive()
 
 import asyncio
-asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+import platform
+
+# ✅ تشغيل الـ event loop بس لو على Windows
+if platform.system() == "Windows":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -13,7 +17,7 @@ from telegram.ext import (
 # ✨ التوكن
 TOKEN = "8587194106:AAHXquYldB0-oRc_nqsqDy0CuocrHSAeQqQ"
 
-# 🧑‍💻 معرف المطور (هات ID بتاعك من @userinfobot)
+# 🧑‍💻 معرف المطور
 DEVELOPER_ID = 1379876091  # ← غيّر الرقم ده بـ Telegram ID بتاعك
 
 # 🎓 رسالة البداية
@@ -88,7 +92,11 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # --- رجوع للقائمة الرئيسية ---
     elif query.data == "main_menu":
-        await start(query, context)
+        await context.bot.send_message(
+            chat_id=query.message.chat_id,
+            text="🎓 رجعناك للقائمة الرئيسية:"
+        )
+        await start(update, context)
 
     # --- المواد ---
     elif query.data in ["bus", "calc", "cp", "cs", "is", "phy"]:
@@ -133,7 +141,7 @@ async def handle_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # إرسال الاقتراح للمطور
         await context.bot.send_message(
             chat_id=DEVELOPER_ID,
-            text=f"📩 اقتراح جديد من {user.first_name} (@{user.username}):\n\n{suggestion}"
+            text=f"📩 اقتراح جديد من {user.first_name} (@{user.username})\n🆔 ID: {user.id}\n\n💡 {suggestion}"
         )
 
         context.user_data["awaiting_suggestion"] = False
