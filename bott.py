@@ -93,7 +93,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data == "contact":
         keyboard = [
             [InlineKeyboardButton("📞 واتساب", url="https://wa.me/201126874664")],
-            [InlineKeyboardButton("💬 تيلجرام", url="https://t.me/@Moaz9Samir")],
+            [InlineKeyboardButton("💬 تيلجرام", url="https://t.me/Moaz9Samir")],
             [InlineKeyboardButton("⬅️ رجوع", callback_data="main_menu")]
         ]
         await query.edit_message_text(
